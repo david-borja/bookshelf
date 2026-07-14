@@ -8,6 +8,7 @@ import {client} from 'utils/api-client'
 import * as mq from 'styles/media-queries'
 import {useAsync} from 'utils/hooks'
 import bookPlaceholderSvg from 'assets/book-placeholder.svg'
+import { useParams } from 'react-router'
 
 const loadingBook = {
   title: 'Loading...',
@@ -24,7 +25,7 @@ function BookScreen({user}) {
   // the bookId from that.
 
   // 💣 remove this, we're getting the bookId from useParams instead.
-  const bookId = '??'
+  const {bookId} = useParams()
   const {data, run} = useAsync()
 
   React.useEffect(() => {
