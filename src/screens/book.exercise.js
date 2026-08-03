@@ -7,49 +7,48 @@ import {FaRegCalendarAlt} from 'react-icons/fa'
 import Tooltip from '@reach/tooltip'
 import {useParams} from 'react-router-dom'
 // 🐨 you'll need these:
-// import {useQuery, useMutation, queryCache} from 'react-query'
-import {useAsync} from 'utils/hooks'
-import {client} from 'utils/api-client'
+// import {useQuery} from 'react-query'
+// import {useAsync} from 'utils/hooks'
+// import {client} from 'utils/api-client'
 import {formatDate} from 'utils/misc'
 import * as mq from 'styles/media-queries'
 import * as colors from 'styles/colors'
-import {Textarea} from 'components/lib'
+import {ErrorMessage, Spinner, Textarea} from 'components/lib'
 import {Rating} from 'components/rating'
 import {StatusButtons} from 'components/status-buttons'
-import bookPlaceholderSvg from 'assets/book-placeholder.svg'
-
-const loadingBook = {
-  title: 'Loading...',
-  author: 'loading...',
-  coverImageUrl: bookPlaceholderSvg,
-  publisher: 'Loading Publishing',
-  synopsis: 'Loading...',
-  loadingBook: true,
-}
+// import bookPlaceholderSvg from 'assets/book-placeholder.svg'
+import { useBook } from 'utils/books.exercise'
+import { useListItem, useUpdateListItem } from 'utils/list-items.exercise'
 
 function BookScreen({user}) {
   const {bookId} = useParams()
   // 💣 remove the useAsync call here
-  const {data, run} = useAsync()
+
+  const book = useBook(bookId, user)
+  // const {data, run} = useAsync()
 
   // 🐨 call useQuery here
   // queryKey should be ['book', {bookId}]
   // queryFn should be what's currently passed in the run function below
 
   // 💣 remove the useEffect here (react-query will handle that now)
-  React.useEffect(() => {
-    run(client(`books/${bookId}`, {token: user.token}))
-  }, [run, bookId, user.token])
+  // React.useEffect(() => {
+  //   run(client(`books/${bookId}`, {token: user.token}))
+  // }, [run, bookId, user.token])
 
   // 🐨 call useQuery to get the list item from the list-items endpoint
   // queryKey should be 'list-items'
   // queryFn should call the 'list-items' endpoint with the user's token
-  const listItem = null
+  // const { data: listItems } = useQuery({
+  //   queryKey: 'list-items',
+  //   queryFn: () => client('list-items', { token: user.token }).then(data => data.listItems)
+  // })
+  // const listItem = listItems?.find(li => li.bookId === book.id) ?? null
   // 🦉 NOTE: the backend doesn't support getting a single list-item by it's ID
   // and instead expects us to cache all the list items and look them up in our
   // cache. This works out because we're using react-query for caching!
-
-  const book = data?.book ?? loadingBook
+  const listItem = useListItem(user, bookId)
+  // const book = data?.book ?? loadingBook
   const {title, author, coverImageUrl, publisher, synopsis} = book
 
   return (
@@ -140,12 +139,18 @@ function NotesTextarea({listItem, user}) {
   // then use the `onSettled` config option to queryCache.invalidateQueries('list-items')
   // 💣 DELETE THIS ESLINT IGNORE!! Don't ignore the exhaustive deps rule please
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const mutate = () => {}
+  // const [mutate] = useMutation(
+  //   (updates) => client(`list-items/${updates.id}`, { method: 'PUT', data: updates, token: user.token }),
+  //   { onSettled: () => queryCache.invalidateQueries('list-items') }
+  // )
+  // const [mutate] = useUpdateListItem()
+  
+  const [mutate, {error, isError, isLoading}] = useUpdateListItem(user)
   const debouncedMutate = React.useMemo(
     () => debounceFn(mutate, {wait: 300}),
     [mutate],
   )
-
+  
   function handleNotesChange(e) {
     debouncedMutate({id: listItem.id, notes: e.target.value})
   }
@@ -165,6 +170,14 @@ function NotesTextarea({listItem, user}) {
         >
           Notes
         </label>
+        {isError ? (
+          <ErrorMessage
+            error={error}
+            variant="inline"
+            css={{ marginLeft: 6, fontSize: '0.7em'}}
+          />
+          ) : null}
+          {isLoading ? <Spinner /> : null}
       </div>
       <Textarea
         id="notes"
