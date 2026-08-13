@@ -12,6 +12,7 @@ import {FinishedScreen} from './screens/finished'
 import {DiscoverBooksScreen} from './screens/discover'
 import {BookScreen} from './screens/book'
 import {NotFoundScreen} from './screens/not-found'
+import { useAuth } from 'context/auth-context.exercise'
 
 function ErrorFallback({error}) {
   return (
@@ -30,8 +31,9 @@ function ErrorFallback({error}) {
 
 // you'll no longer receive the user object and logout function as props
 // 💣 remove the props
-function AuthenticatedApp({user, logout}) {
+function AuthenticatedApp() {
   // 🐨 get user and logout function from AuthContext using useContext
+  const {user, logout} = useAuth()
   return (
     <ErrorBoundary FallbackComponent={FullPageErrorFallback}>
       <div
@@ -71,7 +73,6 @@ function AuthenticatedApp({user, logout}) {
           <ErrorBoundary FallbackComponent={ErrorFallback}>
             <AppRoutes
               // 🐨 we no longer need to pass the user
-              user={user}
             />
           </ErrorBoundary>
         </main>
@@ -152,14 +153,14 @@ function Nav() {
 
 // you'll no longer receive the user object and logout function as props
 // 💣 remove the user prop
-function AppRoutes({user}) {
+function AppRoutes() {
   return (
     <Routes>
       {/* 💣 remove the user prop on all of these, they can get it from context */}
-      <Route path="/list" element={<ReadingListScreen user={user} />} />
-      <Route path="/finished" element={<FinishedScreen user={user} />} />
-      <Route path="/discover" element={<DiscoverBooksScreen user={user} />} />
-      <Route path="/book/:bookId" element={<BookScreen user={user} />} />
+      <Route path="/list" element={<ReadingListScreen />} />
+      <Route path="/finished" element={<FinishedScreen />} />
+      <Route path="/discover" element={<DiscoverBooksScreen />} />
+      <Route path="/book/:bookId" element={<BookScreen />} />
       <Route path="*" element={<NotFoundScreen />} />
     </Routes>
   )

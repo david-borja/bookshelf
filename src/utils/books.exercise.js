@@ -1,8 +1,9 @@
 // 🐨 we're going to use React hooks in here now so we'll need React
 import {useQuery, queryCache} from 'react-query'
 // 🐨 get AuthContext from context/auth-context
-import {client} from './api-client'
 import bookPlaceholderSvg from 'assets/book-placeholder.svg'
+import { useClient } from 'context/auth-context.exercise'
+import React from 'react'
 
 const loadingBook = {
   title: 'Loading...',
@@ -20,12 +21,10 @@ const loadingBooks = Array.from({length: 10}, (v, index) => ({
 
 // 🦉 note that this is *not* treated as a hook and is instead called by other hooks
 // So we'll continue to accept the user here.
-const getBookSearchConfig = (query, user) => ({
+const getBookSearchConfig = (query, client) => ({
   queryKey: ['bookSearch', {query}],
   queryFn: () =>
-    client(`books?query=${encodeURIComponent(query)}`, {
-      token: user.token,
-    }).then(data => data.books),
+    client(`books?query=${encodeURIComponent(query)}`).then(data => data.books),
   config: {
     onSuccess(books) {
       for (const book of books) {
@@ -36,19 +35,21 @@ const getBookSearchConfig = (query, user) => ({
 })
 
 // 💣 remove the user argument here
-function useBookSearch(query, user) {
+function useBookSearch(query) {
   // 🐨 get the user from React.useContext(AuthContext)
-  const result = useQuery(getBookSearchConfig(query, user))
+  const client = useClient()
+  const result = useQuery(getBookSearchConfig(query, client))
   return {...result, books: result.data ?? loadingBooks}
 }
 
 // 💣 remove the user argument here
-function useBook(bookId, user) {
-  // 🐨 get the user from React.useContext(AuthContext)
+function useBook(bookId) {
+  // 🐨 get the user from useAuth()
+  const client = useClient()
   const {data} = useQuery({
     queryKey: ['book', {bookId}],
     queryFn: () =>
-      client(`books/${bookId}`, {token: user.token}).then(data => data.book),
+      client(`books/${bookId}`).then(data => data.book),
   })
   return data ?? loadingBook
 }
@@ -61,9 +62,13 @@ function useBook(bookId, user) {
 // 2. Returns a memoized callback (React.useCallback) version of this
 // refetchBookSearchQuery function. It should no longer need to accept user as
 // an argument and instead lists it as a dependency.
-async function refetchBookSearchQuery(user) {
-  queryCache.removeQueries('bookSearch')
-  await queryCache.prefetchQuery(getBookSearchConfig('', user))
+
+function useRefetchBookSearchQuery() {
+  const client = useClient()
+  return React.useCallback(async function refetchBookSearchQuery() {
+    queryCache.removeQueries('bookSearch')
+    await queryCache.prefetchQuery(getBookSearchConfig('', client))
+  }, [client])
 }
 
 const bookQueryConfig = {
@@ -75,4 +80,4 @@ function setQueryDataForBook(book) {
   queryCache.setQueryData(['book', {bookId: book.id}], book, bookQueryConfig)
 }
 
-export {useBook, useBookSearch, refetchBookSearchQuery, setQueryDataForBook}
+export {useBook, useBookSearch, useRefetchBookSearchQuery, setQueryDataForBook}
